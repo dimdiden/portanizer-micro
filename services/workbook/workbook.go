@@ -27,10 +27,10 @@ type PostRepository interface {
 }
 
 // TagsRepository is the interaction with the tag database
-type TagsRepository interface {
-	Create(ctx context.Context, tag Tag) (string, error)
+type TagRepository interface {
+	Create(ctx context.Context, pid string, tag Tag) (string, error)
 	Update(ctx context.Context, id string, tag Tag) error
-	GetAll(ctx context.Context) ([]*Post, error)
+	GetAll(ctx context.Context) ([]*Tag, error)
 	Dalete(ctx context.Context, id string) error
 	// DaleteTags(ctx context.Context, ids []string) error
 }
