@@ -9,8 +9,8 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/go-kit/kit/endpoint"
 
-	"github.com/dimdiden/portanizer-micro/services/users"
-	userstransport "github.com/dimdiden/portanizer-micro/services/users/transport"
+	"github.com/dimdiden/portanizer-micro/users"
+	userstransport "github.com/dimdiden/portanizer-micro/users/transport"
 )
 
 type config struct {

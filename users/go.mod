@@ -1,4 +1,4 @@
-module github.com/dimdiden/portanizer-micro/services/users
+module github.com/dimdiden/portanizer-micro/users
 
 require (
 	github.com/go-kit/kit v0.8.0

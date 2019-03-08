@@ -4,7 +4,7 @@ services:
   workbook:
     container_name: workbook
     restart: always
-    build: "./services/workbook"
+    build: "./workbook"
     ports:
       - "8080:8080"
     depends_on:
@@ -25,7 +25,7 @@ services:
   users:
     container_name: users
     restart: always
-    build: "./services/users"
+    build: "./users"
     environment:
       GRPC_ADDR: ":8081"
 
