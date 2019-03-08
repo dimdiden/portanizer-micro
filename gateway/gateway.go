@@ -1,20 +1,31 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"errors"
+	"net/http"
+	"os/signal"
+	"syscall"
+	"context"
+	"encoding/json"
 
 	"github.com/gorilla/mux"
+	"github.com/kelseyhightower/envconfig"
+	"google.golang.org/grpc"
 
+	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/go-kit/kit/endpoint"
 
 	"github.com/dimdiden/portanizer-micro/users"
 	userstransport "github.com/dimdiden/portanizer-micro/users/transport"
+	usersgrpc "github.com/dimdiden/portanizer-micro/users/transport/grpc"
 )
 
 type config struct {
 	HTTPAddr string `envconfig:"HTTP_ADDR"`
+	UsersGRPCAddr string `envconfig:"USERS_GRPC_ADDR"`
 }
 
 var (
@@ -43,9 +54,33 @@ func main() {
 	
 	var h http.Handler
 	{
-		usersEndpoints := transport.MakePostEndpoints(postSvc)
-		h = NewService(postEndpoints, tagEndpoints, logger)
+		conn, err := grpc.Dial(cfg.UsersGRPCAddr, grpc.WithInsecure())
+		if err != nil {
+			level.Error(logger).Log("exit", err)
+			os.Exit(-1)
+		}
+		service := usersgrpc.NewGRPCClient(conn, logger)
+		usersEndpoints := userstransport.MakeEndpoints(service)
+		h = NewService(usersEndpoints, logger)
 	}
+
+	errs := make(chan error)
+	go func() {
+		c := make(chan os.Signal)
+		signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
+		errs <- fmt.Errorf("%s", <-c)
+	}()
+
+	go func() {
+		level.Info(logger).Log("transport", "HTTP", "addr", cfg.HTTPAddr)
+		server := &http.Server{
+			Addr:    cfg.HTTPAddr,
+			Handler: h,
+		}
+		errs <- server.ListenAndServe()
+	}()
+
+	level.Error(logger).Log("exit", <-errs)
 
 }
 
@@ -60,7 +95,7 @@ func NewService(
 		kithttp.ServerErrorEncoder(encodeError),
 	}
 	r.Methods("POST").Path("/users").Handler(kithttp.NewServer(
-		usersEndpoints.CreateAccount,
+		usersEndpoints.CreateAccountEndpoint,
 		decodeCreateAccountRequest,
 		encodeResponse,
 		options...,
@@ -72,7 +107,7 @@ type errorer interface {
 	Error() error
 }
 
-func decodeCreateAccountRequestRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
 	var user users.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return nil, err
@@ -104,16 +139,10 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 
 func codeFrom(err error) int {
 	switch err {
-	case workbook.ErrNotFound:
+	case users.ErrNotFound:
 		return http.StatusNotFound
-	// case err.(*stdjwt.ValidationError):
-	case jwt.ErrTokenContextMissing,
-		jwt.ErrTokenExpired,
-		jwt.ErrTokenInvalid,
-		jwt.ErrTokenMalformed,
-		jwt.ErrTokenNotActive,
-		jwt.ErrUnexpectedSigningMethod:
-		return http.StatusUnauthorized
+	case users.ErrExists:
+		return http.StatusConflict
 	default:
 		return http.StatusInternalServerError
 	}
