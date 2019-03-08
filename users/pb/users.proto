@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package pb;
+
+service Users {
+    rpc CreateAccount (CreateAccountRequest) returns (CreateAccountReply) {}
+}
+
+message CreateAccountRequest {
+    string email = 1;
+    string pwd = 2;
+}
+
+message CreateAccountReply {
+    User user = 1;
+    string err = 2;
+}
+
+message User {
+    string id = 1;
+}
