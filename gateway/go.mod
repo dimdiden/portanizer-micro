@@ -1,7 +1,7 @@
 module github.com/dimdiden/portanizer-micro/gateway
 
 require (
-	github.com/dimdiden/portanizer-micro/users v0.0.0-20190308102646-4712e8c6207e
+	github.com/dimdiden/portanizer-micro/users v0.0.0-20190309064104-149717974941
 	github.com/go-kit/kit v0.8.0
 	github.com/gorilla/mux v1.7.0
 	github.com/kelseyhightower/envconfig v1.3.0

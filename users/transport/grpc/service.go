@@ -86,8 +86,7 @@ func decodeGRPCCreateAccountResponse(_ context.Context, grpcReply interface{}) (
 	fmt.Println("func decodeGRPCCreateAccountResponse(_ context.  ",reply.User.Id, reply.User.Email, reply.User.Pwd)
 	return transport.CreateAccountResponse{
 		User: &users.User{
-			// ID: reply.User.Id,
-			ID: "HUI", //  ==========
+			ID: reply.User.Id,
 			Email: reply.User.Email,
 			Password: reply.User.Pwd}, Err: str2err(reply.Err)}, nil // BUG
 }
