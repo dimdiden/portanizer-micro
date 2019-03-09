@@ -1,12 +1,22 @@
 version: '3.6'
 services:
 
+  gateway:
+    container_name: gateway
+    restart: always
+    build: "./gateway"
+    ports:
+      - "8080:8080"
+    environment:
+      HTTP_ADDR: ":8080"
+      USERS_GRPC_ADDR: "users:8080"
+
   workbook:
     container_name: workbook
     restart: always
     build: "./workbook"
     ports:
-      - "8080:8080"
+      - "8082:8080"
     depends_on:
       - "workbook_db"
     environment:
@@ -27,7 +37,7 @@ services:
     restart: always
     build: "./users"
     environment:
-      GRPC_ADDR: ":8081"
+      GRPC_ADDR: ":8080"
 
   adminer:
     image: adminer

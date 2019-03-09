@@ -18,4 +18,6 @@ message CreateAccountReply {
 
 message User {
     string id = 1;
+    string email = 2;
+    string pwd = 3;
 }

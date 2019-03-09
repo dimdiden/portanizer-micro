@@ -95,26 +95,4 @@ func main() {
 		})
 	}
 	logger.Log("exit", g.Run())
-
-
-
-
-
-	// errs := make(chan error)
-	// go func() {
-	// 	c := make(chan os.Signal)
-	// 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)
-	// 	errs <- fmt.Errorf("%s", <-c)
-	// }()
-
-	// go func() {
-	// 	level.Info(logger).Log("transport", "HTTP", "addr", cfg.HTTPAddr)
-	// 	server := &http.Server{
-	// 		Addr:    cfg.HTTPAddr,
-	// 		Handler: h,
-	// 	}
-	// 	errs <- server.ListenAndServe()
-	// }()
-
-	// level.Error(logger).Log("exit", <-errs)
 }

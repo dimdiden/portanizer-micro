@@ -21,6 +21,7 @@ import (
 	"github.com/dimdiden/portanizer-micro/users"
 	userstransport "github.com/dimdiden/portanizer-micro/users/transport"
 	usersgrpc "github.com/dimdiden/portanizer-micro/users/transport/grpc"
+	// userspb "github.com/dimdiden/portanizer-micro/users/pb"
 )
 
 type config struct {
@@ -49,8 +50,6 @@ func main() {
 	}
 	level.Info(logger).Log("msg", "service started")
 	defer level.Info(logger).Log("msg", "service ended")
-
-	// r := mux.NewRouter()
 	
 	var h http.Handler
 	{
@@ -59,9 +58,11 @@ func main() {
 			level.Error(logger).Log("exit", err)
 			os.Exit(-1)
 		}
-		service := usersgrpc.NewGRPCClient(conn, logger)
-		usersEndpoints := userstransport.MakeEndpoints(service)
-		h = NewService(usersEndpoints, logger)
+		// service := usersgrpc.NewGRPCClient(conn, logger)
+		usersEndpoints := usersgrpc.NewGRPCClient(conn, logger)
+		level.Info(logger).Log("msg", "connected to Users GRPC server")
+		// usersEndpoints := userstransport.MakeEndpoints(service)
+		h = NewServer(usersEndpoints, logger)
 	}
 
 	errs := make(chan error)
@@ -84,11 +85,8 @@ func main() {
 
 }
 
-// NewService wires Go kit endpoints to the HTTP transport.
-func NewService(
-	usersEndpoints userstransport.Endpoints,
-	logger log.Logger,
-) http.Handler {
+// NewServer wires Go kit endpoints to the HTTP transport.
+func NewServer(usersEndpoints userstransport.Endpoints, logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []kithttp.ServerOption{
 		kithttp.ServerErrorLogger(logger),
@@ -112,7 +110,7 @@ func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request int
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return nil, err
 	}
-	return user, nil
+	return userstransport.CreateAccountRequest{Email:user.Email, Pwd:user.Password}, nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -123,6 +121,9 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	res, ok := response.(userstransport.CreateAccountResponse)
+	fmt.Println("func encodeResponse(ctx context.Context, ", res.User.ID, res.User.Email, res.User.Password)
+	fmt.Println("converted: ", ok)
 	return json.NewEncoder(w).Encode(response)
 }
 

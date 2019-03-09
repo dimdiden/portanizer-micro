@@ -2,6 +2,7 @@ package transport
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-kit/kit/endpoint"
 
@@ -24,6 +25,7 @@ func (e Endpoints) CreateAccount(ctx context.Context, email, pwd string) (*users
 		return nil, err
 	}
 	response := resp.(CreateAccountResponse)
+	fmt.Println("func (e Endpoints) CreateAccount ", response.User.ID, response.User.Email)
 	return response.User, response.Err
 }
 
@@ -31,6 +33,9 @@ func makeCreateAccountEndpoint(s users.Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(CreateAccountRequest)
 		user, err := s.CreateAccount(ctx, req.Email, req.Pwd)
+		user.ID = "HUI"
+		user.Password = "sakjdkasjdkajs"
+		fmt.Println("func makeCreateAccountEndpoint(s users.Service) ", user.ID, user.Email, user.Password)
 		return CreateAccountResponse{User: user, Err: err}, nil
 	}
 }

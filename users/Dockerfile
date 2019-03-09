@@ -1,5 +1,5 @@
 # https://container-solutions.com/faster-builds-in-docker-with-go-1-11/
-FROM golang:1.11.1-alpine AS build_base
+FROM golang:1.12.0-alpine AS build_base
 
 RUN mkdir -p /users
 RUN apk add bash git gcc g++ libc-dev
