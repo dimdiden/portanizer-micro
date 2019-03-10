@@ -2,7 +2,6 @@ package implementation
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/dimdiden/portanizer-micro/users"
 	"github.com/go-kit/kit/log"
@@ -25,7 +24,6 @@ func (s *service) CreateAccount(ctx context.Context, email, pwd string) (*users.
 	logger := log.With(s.logger, "method", "CreateAccount")
 
 	user, err := s.repository.InsertUser(ctx, email, pwd)
-	fmt.Println("func (s *service) CreateAccount(ctx context.Context, email, ", user.ID, user.Email, user.Password)
 	if err != nil {
 		level.Error(logger).Log("err", err)
 		return nil, users.ErrQueryRepository

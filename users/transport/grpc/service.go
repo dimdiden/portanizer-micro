@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"google.golang.org/grpc"
 
@@ -38,27 +37,10 @@ func (s *grpcServer) CreateAccount(ctx context.Context, req *pb.CreateAccountReq
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("func (s *grpcServer) CreateAccount(ctx context.Context, ")
 	return rep.(*pb.CreateAccountReply), nil
 }
 
-// func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) users.Service {
-
-// 	createAccountEndpoint := kitgrpc.NewClient(
-// 			conn,
-// 			"pb.Users",
-// 			"CreateAccount",
-// 			encodeGRPCCreateAccountRequest,
-// 			decodeGRPCCreateAccountResponse,
-// 			pb.CreateAccountReply{},
-// 		).Endpoint()
-	
-// 	return transport.Endpoints{
-// 		CreateAccountEndpoint: createAccountEndpoint,
-// 	}
-// }
-
-func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) transport.Endpoints {
+func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) users.Service {
 
 	createAccountEndpoint := kitgrpc.NewClient(
 			conn,
@@ -76,14 +58,11 @@ func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) transport.Endpoints
 
 func decodeGRPCCreateAccountRequest(_ context.Context, grpcReq interface{}) (interface{}, error) {
 	req := grpcReq.(*pb.CreateAccountRequest)
-	fmt.Println("func decodeGRPCCreateAccountRequest(_ context.Context ",req.Email, req.Pwd)
 	return transport.CreateAccountRequest{Email: req.Email, Pwd: req.Pwd}, nil
 }
 
-// BUG
 func decodeGRPCCreateAccountResponse(_ context.Context, grpcReply interface{}) (interface{}, error) {
 	reply := grpcReply.(*pb.CreateAccountReply)
-	fmt.Println("func decodeGRPCCreateAccountResponse(_ context.  ",reply.User.Id, reply.User.Email, reply.User.Pwd)
 	return transport.CreateAccountResponse{
 		User: &users.User{
 			ID: reply.User.Id,
@@ -91,16 +70,13 @@ func decodeGRPCCreateAccountResponse(_ context.Context, grpcReply interface{}) (
 			Password: reply.User.Pwd}, Err: str2err(reply.Err)}, nil // BUG
 }
 
-// BUG 
 func encodeGRPCCreateAccountRequest(_ context.Context, request interface{}) (interface{}, error) {
 	req := request.(transport.CreateAccountRequest)
-	fmt.Println("func encodeGRPCCreateAccountRequest(_ context.Context  ",req.Email, req.Pwd)
 	return &pb.CreateAccountRequest{Email: req.Email, Pwd: req.Pwd}, nil
 }
 
 func encodeGRPCCreateAccountResponse(_ context.Context, response interface{}) (interface{}, error) {
 	resp := response.(transport.CreateAccountResponse)
-	fmt.Println("func encodeGRPCCreateAccountResponse(_ context.Context,  ",resp.User.ID, resp.User.Email, resp.User.Password)
 	return &pb.CreateAccountReply{
 		User: &pb.User{
 			Id: resp.User.ID,

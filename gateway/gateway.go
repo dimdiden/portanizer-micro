@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"errors"
 	"net/http"
 	"os/signal"
 	"syscall"
@@ -28,10 +27,6 @@ type config struct {
 	HTTPAddr string `envconfig:"HTTP_ADDR"`
 	UsersGRPCAddr string `envconfig:"USERS_GRPC_ADDR"`
 }
-
-var (
-	ErrBadRouting = errors.New("bad routing")
-)
 
 func main() {
 	var cfg config
@@ -58,10 +53,10 @@ func main() {
 			level.Error(logger).Log("exit", err)
 			os.Exit(-1)
 		}
-		// service := usersgrpc.NewGRPCClient(conn, logger)
-		usersEndpoints := usersgrpc.NewGRPCClient(conn, logger)
+		service := usersgrpc.NewGRPCClient(conn, logger)
+		// usersEndpoints := usersgrpc.NewGRPCClient(conn, logger)
 		level.Info(logger).Log("msg", "connected to Users GRPC server")
-		// usersEndpoints := userstransport.MakeEndpoints(service)
+		usersEndpoints := userstransport.MakeEndpoints(service)
 		h = NewServer(usersEndpoints, logger)
 	}
 
@@ -121,9 +116,6 @@ func encodeResponse(ctx context.Context, w http.ResponseWriter, response interfa
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	res, ok := response.(userstransport.CreateAccountResponse)
-	fmt.Println("func encodeResponse(ctx context.Context, ", res.User.ID, res.User.Email, res.User.Password)
-	fmt.Println("converted: ", ok)
 	return json.NewEncoder(w).Encode(response)
 }
 
