@@ -1,30 +1,30 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"net/http"
-	"os/signal"
-	"syscall"
 	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"google.golang.org/grpc"
 
-	kithttp "github.com/go-kit/kit/transport/http"
+	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	kithttp "github.com/go-kit/kit/transport/http"
 
-	"github.com/dimdiden/portanizer-micro/users"
-	userstransport "github.com/dimdiden/portanizer-micro/users/transport"
-	usersgrpc "github.com/dimdiden/portanizer-micro/users/transport/grpc"
-	// userspb "github.com/dimdiden/portanizer-micro/users/pb"
+	"github.com/dimdiden/portanizer-micro/services/users"
+	userstransport "github.com/dimdiden/portanizer-micro/services/users/transport"
+	usersgrpc "github.com/dimdiden/portanizer-micro/services/users/transport/grpc"
 )
 
 type config struct {
-	HTTPAddr string `envconfig:"HTTP_ADDR"`
+	HTTPAddr      string `envconfig:"HTTP_ADDR"`
 	UsersGRPCAddr string `envconfig:"USERS_GRPC_ADDR"`
 }
 
@@ -45,7 +45,7 @@ func main() {
 	}
 	level.Info(logger).Log("msg", "service started")
 	defer level.Info(logger).Log("msg", "service ended")
-	
+
 	var h http.Handler
 	{
 		conn, err := grpc.Dial(cfg.UsersGRPCAddr, grpc.WithInsecure())
@@ -54,7 +54,6 @@ func main() {
 			os.Exit(-1)
 		}
 		service := usersgrpc.NewGRPCClient(conn, logger)
-		// usersEndpoints := usersgrpc.NewGRPCClient(conn, logger)
 		level.Info(logger).Log("msg", "connected to Users GRPC server")
 		usersEndpoints := userstransport.MakeEndpoints(service)
 		h = NewServer(usersEndpoints, logger)
@@ -93,11 +92,8 @@ func NewServer(usersEndpoints userstransport.Endpoints, logger log.Logger) http.
 		encodeResponse,
 		options...,
 	))
-	return r
-}
 
-type errorer interface {
-	Error() error
+	return r
 }
 
 func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
@@ -105,14 +101,14 @@ func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request int
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		return nil, err
 	}
-	return userstransport.CreateAccountRequest{Email:user.Email, Pwd:user.Password}, nil
+	return userstransport.CreateAccountRequest{Email: user.Email, Pwd: user.Password}, nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
-	if e, ok := response.(errorer); ok && e.Error() != nil {
+	if e, ok := response.(endpoint.Failer); ok && e.Failed() != nil {
 		// Not a Go kit transport error, but a business-logic error.
 		// Provide those as HTTP errors.
-		encodeError(ctx, e.Error(), w)
+		encodeError(ctx, e.Failed(), w)
 		return nil
 	}
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
@@ -131,11 +127,13 @@ func encodeError(_ context.Context, err error, w http.ResponseWriter) {
 }
 
 func codeFrom(err error) int {
-	switch err {
-	case users.ErrNotFound:
+	switch err.Error() {
+	case users.ErrNotFound.Error():
 		return http.StatusNotFound
-	case users.ErrExists:
+	case users.ErrExists.Error():
 		return http.StatusConflict
+	case users.ErrNotValid.Error():
+		return http.StatusBadRequest
 	default:
 		return http.StatusInternalServerError
 	}

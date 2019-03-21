@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 	"net"
+	"context"
+	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -13,16 +15,18 @@ import (
 	"google.golang.org/grpc"
 	"github.com/kelseyhightower/envconfig"
 
-	"github.com/dimdiden/portanizer-micro/users"
-	"github.com/dimdiden/portanizer-micro/users/pb"
-	"github.com/dimdiden/portanizer-micro/users/transport"
-	grpctransport "github.com/dimdiden/portanizer-micro/users/transport/grpc"
-	"github.com/dimdiden/portanizer-micro/users/gormdb"
-	userssvc "github.com/dimdiden/portanizer-micro/users/implementation"
+	"github.com/dimdiden/portanizer-micro/services/users"
+	"github.com/dimdiden/portanizer-micro/services/users/pb"
+	"github.com/dimdiden/portanizer-micro/services/users/transport"
+	grpctransport "github.com/dimdiden/portanizer-micro/services/users/transport/grpc"
+	// "github.com/dimdiden/portanizer-micro/services/users/gormdb"
+	"github.com/dimdiden/portanizer-micro/services/users/mongodb"
+	userssvc "github.com/dimdiden/portanizer-micro/services/users/implementation"
 )
 
 type config struct {
 	GRPCAddr string `envconfig:"GRPC_ADDR"`
+	MongoAddr string `envconfig:"MONGO_ADDR"`
 }
 
 func main() {
@@ -45,7 +49,14 @@ func main() {
 
 	var repository users.Repository
 	{
-		repository = gormdb.New(logger)
+		var err error
+		ctx, _ := context.WithTimeout(context.Background(), 10*time.Second)
+		repository, err = mongodb.NewRepository(ctx, cfg.MongoAddr, logger)
+		if err != nil {
+			logger.Log("mongodb", "connection failed", "err", err)
+			os.Exit(1)
+		}
+		// repository = gormdb.New(logger)
 	}
 	level.Info(logger).Log("msg", "database connected")
 

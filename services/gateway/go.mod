@@ -1,8 +1,9 @@
-module github.com/dimdiden/portanizer-micro/gateway
+module github.com/dimdiden/portanizer-micro/service/gateway
 
 require (
-	github.com/dimdiden/portanizer-micro/users v0.0.0-20190309074023-778812c57276
+	github.com/dimdiden/portanizer-micro/services/users v0.0.0-00010101000000-000000000000
 	github.com/go-kit/kit v0.8.0
+	github.com/golang/protobuf v1.3.0
 	github.com/gorilla/mux v1.7.0
 	github.com/kelseyhightower/envconfig v1.3.0
 	golang.org/x/net v0.0.0-20190301231341-16b79f2e4e95 // indirect
@@ -11,3 +12,5 @@ require (
 	google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19 // indirect
 	google.golang.org/grpc v1.19.0
 )
+
+replace github.com/dimdiden/portanizer-micro/services/users => ../users

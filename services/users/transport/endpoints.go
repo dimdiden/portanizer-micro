@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-kit/kit/endpoint"
 
-	"github.com/dimdiden/portanizer-micro/users"
+	"github.com/dimdiden/portanizer-micro/services/users"
 )
 
 type Endpoints struct {

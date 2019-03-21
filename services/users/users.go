@@ -3,9 +3,9 @@ package users
 import "context"
 
 type User struct {
-	ID       string
-	Email    string `gorm:"unique;not null"`
-	Password string `gorm:"not null"`
+	ID       string `json:"id" bson:"_id,omitempty"`
+	Email    string `json:"email" bson:"email"`
+	Password string `json:"password,omitempty" bson:"password"`
 }
 
 type Repository interface {

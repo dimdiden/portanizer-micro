@@ -1,10 +1,15 @@
-rerun:
+genproto:
+	cd proto; \
+	sh ./compile.sh;
+vendor:
 	for service in auth gateway users workbook; do \
-		cd $$service ; \
+		cd ./services/$$service ; \
 		go mod tidy ; \
     	go mod vendor ; \
-    	cd .. ; \
+    	cd ../.. ; \
 	done
-	make run
-run:
+build:
 	docker-compose up --build
+rebuild:
+	make vendor
+	make build

@@ -2,6 +2,9 @@ syntax = "proto3";
 
 package pb;
 
+// ======USERS SECTION======
+
+
 service Users {
     rpc CreateAccount (CreateAccountRequest) returns (CreateAccountReply) {}
 }
@@ -19,5 +22,5 @@ message CreateAccountReply {
 message User {
     string id = 1;
     string email = 2;
-    string pwd = 3;
+    // string pwd = 3;
 }

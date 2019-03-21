@@ -1,7 +1,7 @@
 package transport
 
 import (
-	"github.com/dimdiden/portanizer-micro/users"
+	"github.com/dimdiden/portanizer-micro/services/users"
 	"github.com/go-kit/kit/endpoint"
 )
 

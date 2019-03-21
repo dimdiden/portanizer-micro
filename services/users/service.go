@@ -11,6 +11,8 @@ var (
 	// ErrExists is common error which occurs when there is a try
 	// to save an item which already exists in the storage
 	ErrExists = errors.New("item already exists")
+	// to save an item which already exists in the storage
+	ErrNotValid = errors.New("the value is not valid")
 	// ErrQueryRepository occurs when there is any other issue with the storage
 	ErrQueryRepository = errors.New("unable to query repository")
 )
