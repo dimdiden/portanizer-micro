@@ -5,7 +5,6 @@ import (
 	"regexp"
 
 	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 
 	"github.com/dimdiden/portanizer-micro/services/users"
 )
@@ -23,7 +22,7 @@ func NewService(repository users.Repository, logger log.Logger) users.Service {
 }
 
 func (s *service) CreateAccount(ctx context.Context, email, pwd string) (*users.User, error) {
-	logger := log.With(s.logger, "method", "CreateAccount")
+	// logger := log.With(s.logger, "method", "CreateAccount")
 
 	if !isEmailValid(email) {
 		return nil, users.ErrNotValid
@@ -34,7 +33,6 @@ func (s *service) CreateAccount(ctx context.Context, email, pwd string) (*users.
 
 	user, err := s.repository.InsertUser(ctx, email, pwd)
 	if err != nil {
-		level.Error(logger).Log("err", err)
 		return nil, err
 	}
 	return user, nil
@@ -44,4 +42,30 @@ func (s *service) CreateAccount(ctx context.Context, email, pwd string) (*users.
 func isEmailValid(email string) bool {
 	re := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	return re.MatchString(email)
+}
+
+func (s *service) SearchByCreds(ctx context.Context, email, pwd string) (*users.User, error) {
+	// logger := log.With(s.logger, "method", "SearchByCreds")
+
+	if !isEmailValid(email) {
+		return nil, users.ErrNotValid
+	}
+
+	user, err := s.repository.GetByCreds(ctx, email, pwd)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *service) SearchByID(ctx context.Context, id string) (*users.User, error) {
+	// logger := log.With(s.logger, "method", "SearchByID")
+
+	user, err := s.repository.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

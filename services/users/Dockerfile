@@ -12,7 +12,7 @@ RUN CGO_ENABLED=0 \
     GOARCH=amd64 \
     go build -mod=vendor ./cmd/users.go
 
-FROM alpine AS workbook
+FROM alpine AS users
 
 COPY --from=build_base /users/users /bin/users
 ENTRYPOINT ["/bin/users"]

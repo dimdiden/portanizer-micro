@@ -81,10 +81,75 @@ func hashAndSalt(pwd string) ([]byte, error) {
 	return hash, nil
 }
 
-// func comparePasswords(hashPwd string, plainPwd string) error {
-// 	err := bcrypt.CompareHashAndPassword([]byte(hashPwd), []byte(plainPwd))
-// 	if err != nil {
-// 		return err
-// 	}
-// 	return nil
-// }
+func (r *repository) GetByCreds(ctx context.Context, email, pwd string) (*users.User, error) {
+	collection := r.db.Collection(collName)
+
+	// https://stackoverflow.com/questions/52024532/using-mongodb-go-driver-for-decoding-documents-into-structs-with-custom-type-fie
+	tmp := struct {
+		ID       primitive.ObjectID `bson:"_id"`
+		Email    string
+		Password string
+	}{}
+	res := collection.FindOne(ctx, bson.M{"email": email})
+
+	if err := res.Decode(&tmp); err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			return nil, users.ErrNotFound
+		default:
+			level.Error(r.logger).Log("err", err)
+			return nil, err
+		}
+	}
+
+	if err := comparePasswords(tmp.Password, pwd); err != nil {
+		return nil, users.ErrPwd
+	}
+
+	user := users.User{
+		ID:    tmp.ID.Hex(),
+		Email: tmp.Email,
+	}
+
+	return &user, nil
+}
+
+func comparePasswords(hashPwd string, plainPwd string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashPwd), []byte(plainPwd))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *repository) GetByID(ctx context.Context, id string) (*users.User, error) {
+	collection := r.db.Collection(collName)
+
+	tmp := struct {
+		ID    primitive.ObjectID `bson:"_id"`
+		Email string
+	}{}
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		level.Error(r.logger).Log("err", err)
+		return nil, users.ErrQueryRepository
+	}
+	res := collection.FindOne(ctx, bson.M{"_id": oid})
+
+	if err := res.Decode(&tmp); err != nil {
+		switch err {
+		case mongo.ErrNoDocuments:
+			return nil, users.ErrNotFound
+		default:
+			level.Error(r.logger).Log("err", err)
+			return nil, users.ErrQueryRepository
+		}
+	}
+
+	user := users.User{
+		ID:    tmp.ID.Hex(),
+		Email: tmp.Email,
+	}
+
+	return &user, nil
+}

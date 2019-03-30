@@ -8,6 +8,8 @@ import (
 // compile time assertions for our response types implementing endpoint.Failer.
 var (
 	_ endpoint.Failer = CreateAccountResponse{}
+	_ endpoint.Failer = SearchByCredsResponse{}
+	_ endpoint.Failer = SearchByIDResponse{}
 )
 
 type CreateAccountRequest struct {
@@ -21,3 +23,26 @@ type CreateAccountResponse struct {
 }
 
 func (r CreateAccountResponse) Failed() error { return r.Err }
+
+type SearchByCredsRequest struct {
+	Email string
+	Pwd   string
+}
+
+type SearchByCredsResponse struct {
+	User *users.User
+	Err  error
+}
+
+func (r SearchByCredsResponse) Failed() error { return r.Err }
+
+type SearchByIDRequest struct {
+	ID string
+}
+
+type SearchByIDResponse struct {
+	User *users.User
+	Err  error
+}
+
+func (r SearchByIDResponse) Failed() error { return r.Err }

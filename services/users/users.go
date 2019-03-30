@@ -10,5 +10,6 @@ type User struct {
 
 type Repository interface {
 	InsertUser(ctx context.Context, email, pwd string) (*User, error)
-	// SelectByCreds(ctx context.Context, email, pwd string) (*User, error)
+	GetByCreds(ctx context.Context, email, pwd string) (*User, error)
+	GetByID(ctx context.Context, id string) (*User, error)
 }
