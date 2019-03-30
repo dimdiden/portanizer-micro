@@ -9,23 +9,35 @@ import (
 	"os/signal"
 	"syscall"
 
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gorilla/mux"
 	"github.com/kelseyhightower/envconfig"
 	"google.golang.org/grpc"
 
+	kitjwt "github.com/go-kit/kit/auth/jwt"
 	"github.com/go-kit/kit/endpoint"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	kithttp "github.com/go-kit/kit/transport/http"
 
+	authtransport "github.com/dimdiden/portanizer-micro/services/auth/transport"
+	authgrpc "github.com/dimdiden/portanizer-micro/services/auth/transport/grpc"
+
 	"github.com/dimdiden/portanizer-micro/services/users"
 	userstransport "github.com/dimdiden/portanizer-micro/services/users/transport"
 	usersgrpc "github.com/dimdiden/portanizer-micro/services/users/transport/grpc"
+
+	"github.com/dimdiden/portanizer-micro/services/workbook"
+	wbtransport "github.com/dimdiden/portanizer-micro/services/workbook/transport"
+	wbgrpc "github.com/dimdiden/portanizer-micro/services/workbook/transport/grpc"
 )
 
 type config struct {
-	HTTPAddr      string `envconfig:"HTTP_ADDR"`
-	UsersGRPCAddr string `envconfig:"USERS_GRPC_ADDR"`
+	HTTPAddr         string `envconfig:"HTTP_ADDR"`
+	UsersGRPCAddr    string `envconfig:"USERS_GRPC_ADDR"`
+	AuthGRPCAddr     string `envconfig:"AUTH_GRPC_ADDR"`
+	WorkbookGRPCAddr string `envconfig:"WORKBOOK_GRPC_ADDR"`
+	Secret           string `envconfig:"SECRET"`
 }
 
 func main() {
@@ -48,15 +60,36 @@ func main() {
 
 	var h http.Handler
 	{
-		conn, err := grpc.Dial(cfg.UsersGRPCAddr, grpc.WithInsecure())
+		kf := func(token *jwt.Token) (interface{}, error) { return []byte(cfg.Secret), nil }
+
+		usersconn, err := grpc.Dial(cfg.UsersGRPCAddr, grpc.WithInsecure())
 		if err != nil {
 			level.Error(logger).Log("exit", err)
 			os.Exit(-1)
 		}
-		service := usersgrpc.NewGRPCClient(conn, logger)
+		usersservice := usersgrpc.NewGRPCClient(usersconn, logger)
 		level.Info(logger).Log("msg", "connected to Users GRPC server")
-		usersEndpoints := userstransport.MakeEndpoints(service)
-		h = NewServer(usersEndpoints, logger)
+		usersEndpoints := userstransport.MakeEndpoints(usersservice)
+
+		authconn, err := grpc.Dial(cfg.AuthGRPCAddr, grpc.WithInsecure())
+		if err != nil {
+			level.Error(logger).Log("exit", err)
+			os.Exit(-1)
+		}
+		authservice := authgrpc.NewGRPCClient(authconn, logger)
+		level.Info(logger).Log("msg", "connected to Auth GRPC server")
+		authEndpoints := authtransport.MakeEndpoints(authservice)
+
+		wbconn, err := grpc.Dial(cfg.WorkbookGRPCAddr, grpc.WithInsecure())
+		if err != nil {
+			level.Error(logger).Log("exit", err)
+			os.Exit(-1)
+		}
+		wbservice := wbgrpc.NewGRPCClient(wbconn, logger)
+		level.Info(logger).Log("msg", "connected to Workbook GRPC server")
+		wbEndpoints := wbtransport.MakeEndpoints(wbservice)
+
+		h = NewServer(kf, usersEndpoints, authEndpoints, wbEndpoints, logger)
 	}
 
 	errs := make(chan error)
@@ -80,15 +113,36 @@ func main() {
 }
 
 // NewServer wires Go kit endpoints to the HTTP transport.
-func NewServer(usersEndpoints userstransport.Endpoints, logger log.Logger) http.Handler {
+func NewServer(
+	kf jwt.Keyfunc,
+	usersEndpoints userstransport.Endpoints,
+	authEndpoints authtransport.Endpoints,
+	wbEndpoints wbtransport.Endpoints,
+	logger log.Logger) http.Handler {
 	r := mux.NewRouter()
 	options := []kithttp.ServerOption{
 		kithttp.ServerErrorLogger(logger),
 		kithttp.ServerErrorEncoder(encodeError),
+		kithttp.ServerBefore(kitjwt.HTTPToContext()),
 	}
 	r.Methods("POST").Path("/users").Handler(kithttp.NewServer(
 		usersEndpoints.CreateAccountEndpoint,
 		decodeCreateAccountRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/signin").Handler(kithttp.NewServer(
+		authEndpoints.IssueTokensEndpoint,
+		decodeIssueTokensRequest,
+		encodeResponse,
+		options...,
+	))
+
+	r.Methods("POST").Path("/posts").Handler(kithttp.NewServer(
+		kitjwt.NewParser(kf, jwt.SigningMethodHS256, kitjwt.StandardClaimsFactory)(wbEndpoints.CreatePostEndpoint),
+		// wbEndpoints.CreatePostEndpoint,
+		decodeCreatePostRequest,
 		encodeResponse,
 		options...,
 	))
@@ -102,6 +156,37 @@ func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request int
 		return nil, err
 	}
 	return userstransport.CreateAccountRequest{Email: user.Email, Pwd: user.Password}, nil
+}
+
+func decodeIssueTokensRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	var user users.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+	return authtransport.IssueTokensRequest{Email: user.Email, Pwd: user.Password}, nil
+}
+
+func decodeCreatePostRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	tmp := struct {
+		ID       string
+		Title    string
+		Content  string
+		TagNames []string `json:"tags"`
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&tmp); err != nil {
+		return nil, err
+	}
+	var tags []workbook.Tag
+	for _, tn := range tmp.TagNames {
+		tags = append(tags, workbook.Tag{Name: tn})
+	}
+	return wbtransport.CreatePostRequest{
+		Post: workbook.Post{
+			ID:      tmp.ID,
+			Title:   tmp.Title,
+			Content: tmp.Content,
+			Tags:    tags,
+		}}, nil
 }
 
 func encodeResponse(ctx context.Context, w http.ResponseWriter, response interface{}) error {
@@ -134,6 +219,14 @@ func codeFrom(err error) int {
 		return http.StatusConflict
 	case users.ErrNotValid.Error():
 		return http.StatusBadRequest
+	case jwt.ErrSignatureInvalid.Error(),
+		kitjwt.ErrTokenContextMissing.Error(),
+		kitjwt.ErrTokenExpired.Error(),
+		kitjwt.ErrTokenInvalid.Error(),
+		kitjwt.ErrTokenMalformed.Error(),
+		kitjwt.ErrTokenNotActive.Error(),
+		kitjwt.ErrUnexpectedSigningMethod.Error():
+		return http.StatusUnauthorized
 	default:
 		return http.StatusInternalServerError
 	}
