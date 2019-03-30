@@ -1,6 +1,9 @@
-genproto:
-	cd proto; \
-	sh ./compile.sh;
+protogen:
+	for service in auth gateway users workbook; do \
+		cd ./services/$$service ; \
+		sh ./compile.sh; \
+		cd ../../ ; \
+	done
 vendor:
 	for service in auth gateway users workbook; do \
 		cd ./services/$$service ; \

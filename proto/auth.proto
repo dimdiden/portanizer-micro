@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package pb;
+
+service Auth {
+    rpc IssueTokens (IssueTokensRequest) returns (IssueTokensReply) {}
+}
+
+message IssueTokensRequest {
+    string email = 1;
+    string pwd = 2;
+}
+
+message IssueTokensReply {
+    Tokens tokens = 1;
+    string err = 2;
+}
+
+message Tokens {
+    string uid = 1;
+    string access = 2;
+}

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package pb;
+
+service Users {
+    rpc CreateAccount (CreateAccountRequest) returns (CreateAccountReply) {}
+    rpc SearchByCreds (SearchByCredsRequest) returns (SearchByCredsReply) {}
+    rpc SearchByID (SearchByIDRequest) returns (SearchByIDReply) {}
+}
+
+message CreateAccountRequest {
+    string email = 1;
+    string pwd = 2;
+}
+
+message CreateAccountReply {
+    User user = 1;
+    string err = 2;
+}
+
+message SearchByCredsRequest {
+    string email = 1;
+    string pwd = 2;
+}
+
+message SearchByCredsReply {
+    User user = 1;
+    string err = 2;
+}
+
+message User {
+    string id = 1;
+    string email = 2;
+    // string pwd = 3;
+}
+
+message SearchByIDRequest {
+    string id = 1;
+}
+
+message SearchByIDReply {
+    User user = 1;
+    string err = 2;
+}
