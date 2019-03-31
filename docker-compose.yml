@@ -42,6 +42,7 @@ services:
     environment:
       GRPC_ADDR: ":8080"
       MONGO_ADDR: "mongodb://users_db:27017"
+      SECRET: "SECRET"
 
   users_db:
     container_name: users_db

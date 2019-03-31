@@ -4,6 +4,9 @@ import (
 	"context"
 	"errors"
 
+	jwt "github.com/dgrijalva/jwt-go"
+
+	kitjwt "github.com/go-kit/kit/auth/jwt"
 	"github.com/go-kit/kit/log"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 
@@ -17,9 +20,10 @@ type grpcServer struct {
 	searchByID    kitgrpc.Handler
 }
 
-func NewGRPCServer(endpoints transport.Endpoints, logger log.Logger) pb.UsersServer {
+func NewGRPCServer(kf jwt.Keyfunc, endpoints transport.Endpoints, logger log.Logger) pb.UsersServer {
 	options := []kitgrpc.ServerOption{
 		kitgrpc.ServerErrorLogger(logger),
+		kitgrpc.ServerBefore(kitjwt.GRPCToContext()),
 	}
 	return &grpcServer{
 		createAccount: kitgrpc.NewServer(
@@ -35,7 +39,8 @@ func NewGRPCServer(endpoints transport.Endpoints, logger log.Logger) pb.UsersSer
 			options...,
 		),
 		searchByID: kitgrpc.NewServer(
-			endpoints.SearchByIDEndpoint,
+			kitjwt.NewParser(kf, jwt.SigningMethodHS256, kitjwt.StandardClaimsFactory)(endpoints.SearchByIDEndpoint),
+			// endpoints.SearchByIDEndpoint,
 			decodeGRPCSearchByIDRequest,
 			encodeGRPCSearchByIDResponse,
 			options...,

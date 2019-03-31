@@ -5,6 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	kitjwt "github.com/go-kit/kit/auth/jwt"
 	"github.com/go-kit/kit/log"
 	kitgrpc "github.com/go-kit/kit/transport/grpc"
 
@@ -14,6 +15,10 @@ import (
 )
 
 func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) users.Service {
+
+	options := []kitgrpc.ClientOption{
+		kitgrpc.ClientBefore(kitjwt.ContextToGRPC()),
+	}
 
 	createAccountEndpoint := kitgrpc.NewClient(
 		conn,
@@ -40,6 +45,7 @@ func NewGRPCClient(conn *grpc.ClientConn, logger log.Logger) users.Service {
 		encodeGRPCSearchByIDRequest,
 		decodeGRPCSearchByIDResponse,
 		pb.SearchByIDReply{},
+		options...,
 	).Endpoint()
 
 	return transport.Endpoints{

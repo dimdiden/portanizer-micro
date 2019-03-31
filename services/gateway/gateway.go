@@ -132,6 +132,13 @@ func NewServer(
 		options...,
 	))
 
+	r.Methods("GET").Path("/user").Handler(kithttp.NewServer(
+		kitjwt.NewParser(kf, jwt.SigningMethodHS256, kitjwt.StandardClaimsFactory)(usersEndpoints.SearchByIDEndpoint),
+		decodeSearchByIDRequest,
+		encodeResponse,
+		options...,
+	))
+
 	r.Methods("POST").Path("/signin").Handler(kithttp.NewServer(
 		authEndpoints.IssueTokensEndpoint,
 		decodeIssueTokensRequest,
@@ -141,7 +148,6 @@ func NewServer(
 
 	r.Methods("POST").Path("/posts").Handler(kithttp.NewServer(
 		kitjwt.NewParser(kf, jwt.SigningMethodHS256, kitjwt.StandardClaimsFactory)(wbEndpoints.CreatePostEndpoint),
-		// wbEndpoints.CreatePostEndpoint,
 		decodeCreatePostRequest,
 		encodeResponse,
 		options...,
@@ -156,6 +162,10 @@ func decodeCreateAccountRequest(_ context.Context, r *http.Request) (request int
 		return nil, err
 	}
 	return userstransport.CreateAccountRequest{Email: user.Email, Pwd: user.Password}, nil
+}
+
+func decodeSearchByIDRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
+	return userstransport.SearchByIDRequest{}, nil
 }
 
 func decodeIssueTokensRequest(_ context.Context, r *http.Request) (request interface{}, err error) {

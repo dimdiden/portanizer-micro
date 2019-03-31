@@ -9,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/oklog/run"
 	"google.golang.org/grpc"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 
 	"github.com/dimdiden/portanizer-micro/services/users"
 	"github.com/dimdiden/portanizer-micro/services/users/pb"
@@ -28,6 +30,7 @@ import (
 type config struct {
 	GRPCAddr  string `envconfig:"GRPC_ADDR"`
 	MongoAddr string `envconfig:"MONGO_ADDR"`
+	Secret    string `envconfig:"SECRET"`
 }
 
 func main() {
@@ -68,8 +71,9 @@ func main() {
 
 	var grpcServer pb.UsersServer
 	{
+		kf := func(token *jwt.Token) (interface{}, error) { return []byte(cfg.Secret), nil }
 		endpoints := transport.MakeEndpoints(service)
-		grpcServer = grpctransport.NewGRPCServer(endpoints, logger)
+		grpcServer = grpctransport.NewGRPCServer(kf, endpoints, logger)
 	}
 
 	var g run.Group

@@ -42,7 +42,7 @@ type SearchByIDRequest struct {
 
 type SearchByIDResponse struct {
 	User *users.User
-	Err  error
+	Err  error `json:"error,omitempty"`
 }
 
 func (r SearchByIDResponse) Failed() error { return r.Err }

@@ -3,9 +3,9 @@ package users
 import "context"
 
 type User struct {
-	ID       string `json:"id" bson:"_id,omitempty"`
-	Email    string `json:"email" bson:"email"`
-	Password string `json:"password,omitempty" bson:"password"`
+	ID       string `bson:"_id,omitempty"`
+	Email    string `bson:"email"`
+	Password string `json:",omitempty" bson:"password"`
 }
 
 type Repository interface {
