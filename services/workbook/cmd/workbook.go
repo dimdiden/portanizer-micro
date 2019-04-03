@@ -26,12 +26,11 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 
-	_ "github.com/jinzhu/gorm/dialects/postgres"
 	_ "github.com/lib/pq"
 )
 
 type config struct {
-	// DatabaseURL string `envconfig:"DATABASE_URL"`
+	DBConn        string `envconfig:"DB_CONNECTION"`
 	GRPCAddr      string `envconfig:"GRPC_ADDR"`
 	UsersGRPCAddr string `envconfig:"USERS_GRPC_ADDR"`
 	Secret        string `envconfig:"SECRET"`
@@ -58,7 +57,7 @@ func main() {
 	var repository workbook.Repository
 	{
 		var err error
-		repository, err = postgresdb.NewRepository("", logger)
+		repository, err = postgresdb.NewRepository(cfg.DBConn, logger)
 		if err != nil {
 			logger.Log("postgresdb", "connection failed", "err", err)
 			os.Exit(1)

@@ -18,27 +18,29 @@ services:
     container_name: workbook
     restart: always
     build: "./services/workbook"
-    # depends_on:
-    #   - "workbook_db"
+    depends_on:
+      - "workbook_db"
     environment:
       GRPC_ADDR: ":8080"
       USERS_GRPC_ADDR: "users:8080"
       SECRET: "SECRET"
-      # DATABASE_URL: "host=workbook_db user=ded dbname=workbook password=secret sslmode=disable"
+      DB_CONNECTION: "host=workbook_db user=ded dbname=workbook password=secret sslmode=disable"
 
-  # workbook_db:
-  #   container_name: workbook_db
-  #   image: postgres:11.2-alpine
-  #   restart: always
-  #   environment: 
-  #     POSTGRES_DB: "workbook"
-  #     POSTGRES_USER: "ded"
-  #     POSTGRES_PASSWORD: "secret"
+  workbook_db:
+    container_name: workbook_db
+    image: postgres:11.2-alpine
+    restart: always
+    environment: 
+      POSTGRES_DB: "workbook"
+      POSTGRES_USER: "ded"
+      POSTGRES_PASSWORD: "secret"
 
   users:
     container_name: users
     restart: always
     build: "./services/users"
+    depends_on:
+      - "users_db"
     environment:
       GRPC_ADDR: ":8080"
       MONGO_ADDR: "mongodb://users_db:27017"
@@ -53,6 +55,8 @@ services:
     container_name: auth
     restart: always
     build: "./services/auth"
+    depends_on:
+      - "auth_db"
     environment:
       GRPC_ADDR: ":8080"
       USERS_GRPC_ADDR: "users:8080"

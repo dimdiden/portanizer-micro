@@ -56,7 +56,7 @@ func decodeGRPCCreatePostResponse(_ context.Context, grpcReply interface{}) (int
 
 	var tags []workbook.Tag
 	for _, tag := range reply.Post.Tags {
-		t := workbook.Tag{Name: tag.Name}
+		t := workbook.Tag{ID: tag.Id, Name: tag.Name}
 		tags = append(tags, t)
 	}
 

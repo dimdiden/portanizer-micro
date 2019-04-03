@@ -177,12 +177,12 @@ func decodeIssueTokensRequest(_ context.Context, r *http.Request) (request inter
 }
 
 func decodeCreatePostRequest(_ context.Context, r *http.Request) (request interface{}, err error) {
-	tmp := struct {
+	var tmp struct {
 		ID       string
 		Title    string
 		Content  string
 		TagNames []string `json:"tags"`
-	}{}
+	}
 	if err := json.NewDecoder(r.Body).Decode(&tmp); err != nil {
 		return nil, err
 	}

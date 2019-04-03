@@ -1,0 +1,5 @@
+DROP TABLE IF EXISTS posts;
+
+DROP TABLE IF EXISTS tags;
+
+DROP TABLE IF EXISTS posts_tags;

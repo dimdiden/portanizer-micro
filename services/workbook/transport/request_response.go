@@ -17,8 +17,8 @@ type CreatePostRequest struct {
 
 // CreatePostResponse holds the response values for the CreatePost method.
 type CreatePostResponse struct {
-	Post *workbook.Post
-	Err  error `json:"error,omitempty"`
+	Post *workbook.Post `json:"post"`
+	Err  error          `json:"error,omitempty"`
 }
 
 func (r CreatePostResponse) Failed() error { return r.Err }

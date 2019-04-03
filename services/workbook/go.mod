@@ -7,7 +7,6 @@ require (
 	github.com/dimdiden/portanizer-micro/services/users v0.0.0-20190321143526-584168598b56
 	github.com/go-kit/kit v0.8.0
 	github.com/golang/protobuf v1.3.1
-	github.com/jinzhu/gorm v1.9.2
 	github.com/kelseyhightower/envconfig v1.3.0
 	github.com/lib/pq v1.0.0
 	github.com/oklog/run v1.0.0

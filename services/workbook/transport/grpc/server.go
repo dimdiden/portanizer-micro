@@ -72,7 +72,7 @@ func encodeGRPCCreatePostResponse(_ context.Context, response interface{}) (inte
 
 	var tags []*pb.Tag
 	for _, tag := range resp.Post.Tags {
-		t := &pb.Tag{Name: tag.Name}
+		t := &pb.Tag{Id: tag.ID, Name: tag.Name}
 		tags = append(tags, t)
 	}
 
